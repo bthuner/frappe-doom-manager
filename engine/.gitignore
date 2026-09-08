@@ -1,0 +1,20 @@
+# Checkout de build de DoomGeneric : le submodule est épinglé, mais build.sh
+# y copie doomgeneric_emscripten.c et y patche wi_stuff.c à chaque build.
+# Voir "ignore = dirty" dans .gitmodules.
+
+# Artefacts de compilation
+*.o
+doom.js
+doom.wasm
+doom.data
+
+# Copies accidentelles du WAD (expansion shell non quotée)
+$doom1.wad
+.wad
+
+# Ancien checkout dupliqué, remplacé par le submodule doomgeneric/
+doomgeneric.pa/
+
+# Divers
+__pycache__/
+*.pyc
