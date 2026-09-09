@@ -3,11 +3,13 @@
 patch_doom_bridge.py -- injects the Frappe run-tracking bridge into DoomGeneric.
 
 A Doom Run is opened when a level starts and closed when it ends, either by
-reaching the exit or by dying. That needs three hooks, in two files:
+reaching the exit or by dying, and its counters tick while the level is played.
+That needs four hooks, in two files:
 
   g_game.c   G_Ticker          -> window.onDoomLevelStart(ep, map, tk, ti, ts)
+  g_game.c   G_Ticker          -> window.onDoomStats(k, tk, i, ti, s, ts, secs)
   g_game.c   G_DoReborn        -> window.onDoomGameOver(ep, map, k, tk, i, ti, s, ts, secs)
-  wi_stuff.c WI_initVariables  -> window.onDoomLevelComplete(same shape)
+  wi_stuff.c WI_initVariables  -> window.onDoomLevelComplete(same shape as game over)
 
 Why the start hook lives in G_Ticker rather than in G_DoLoadLevel, the obvious
 place: G_DoPlayDemo() calls G_InitNew() -- which loads the level and clears
@@ -30,7 +32,7 @@ import os
 import re
 import sys
 
-VERSION = "v3"
+VERSION = "v4"
 PREFIX = "/* FRAPPE_DOOM_BRIDGE"
 
 INCLUDE = """
@@ -47,17 +49,41 @@ START = """
     {
         static int fdb_last_tic = -1;
         static int fdb_last_map = -1;
+        static int fdb_last_stats = -1;
 
-        if (gamestate == GS_LEVEL && usergame && !demoplayback
-            && (levelstarttic != fdb_last_tic || gamemap != fdb_last_map))
+        if (gamestate == GS_LEVEL && usergame && !demoplayback)
         {
-            fdb_last_tic = levelstarttic;
-            fdb_last_map = gamemap;
-            EM_ASM({
-                if (window.onDoomLevelStart) {
-                    window.onDoomLevelStart($0, $1, $2, $3, $4);
-                }
-            }, gameepisode, gamemap, totalkills, totalitems, totalsecret);
+            if (levelstarttic != fdb_last_tic || gamemap != fdb_last_map)
+            {
+                fdb_last_tic = levelstarttic;
+                fdb_last_map = gamemap;
+                EM_ASM({
+                    if (window.onDoomLevelStart) {
+                        window.onDoomLevelStart($0, $1, $2, $3, $4);
+                    }
+                }, gameepisode, gamemap, totalkills, totalitems, totalsecret);
+            }
+            else if (leveltime %% 7 == 0 && leveltime != fdb_last_stats)
+            {
+                /* Live counters. Every 7th tic is 5 Hz: fast enough that a kill
+                   lands on screen at once, and the clock only shows whole
+                   seconds anyway. leveltime freezes while the menu is up, so
+                   the HUD freezes with the game rather than drifting -- and the
+                   fdb_last_stats guard keeps a freeze on a multiple of 7 from
+                   re-emitting the same values every tic. */
+                player_t *fdb_p = &players[consoleplayer];
+
+                fdb_last_stats = leveltime;
+
+                EM_ASM({
+                    if (window.onDoomStats) {
+                        window.onDoomStats($0, $1, $2, $3, $4, $5, $6);
+                    }
+                }, fdb_p->killcount,   totalkills,
+                   fdb_p->itemcount,   totalitems,
+                   fdb_p->secretcount, totalsecret,
+                   leveltime / 35);
+            }
         }
     }
 #endif
