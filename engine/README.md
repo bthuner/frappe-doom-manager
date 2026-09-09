@@ -55,8 +55,24 @@ save). Runs are listed under `/app/doom-run`. Reset everything with
 
 The compose file is frappe_docker's `pwd.yml` with the image swapped for the
 locally built `doom-frappe:local`, MariaDB 10.6, port 8099, and
-`--install-app doom_manager` at site creation. After changing app code or
-rebuilding the engine, run `docker compose build && docker compose up -d`.
+`--install-app doom_manager` at site creation.
+
+The app is **copied into the image** at build time -- the only volumes are
+`sites` and `logs`, nothing bind-mounts the source. A running container
+therefore keeps serving the app as it was at the last `docker compose build`.
+After changing app code or rebuilding the engine:
+
+```bash
+docker compose build && docker compose up -d
+# DocType changes (new fields) additionally need:
+docker compose exec backend bench --site frontend migrate
+```
+
+The order matters. Running `migrate` without rebuilding first migrates the
+*old* app baked into the image, reports success, and changes nothing -- the new
+columns simply never appear. `Queued rebuilding of search index for frontend`
+is the normal last line of a successful migrate: the index rebuild is enqueued
+on the long queue, not run inline, so the command is done when it prints that.
 
 ## Controls
 
