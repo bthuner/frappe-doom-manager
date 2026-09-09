@@ -125,6 +125,22 @@ window.onDoomLevelStart = function (episode, map, totalKills, totalItems, totalS
   startListeners.forEach((fn) => fn(payload))
 }
 
+// Pushed ~5x a second while a level is being played, so the counters and the
+// clock move with the game instead of jumping at the intermission screen. No
+// listener set: the tiles read engine.state directly, and a run is only written
+// to the server at the level's start and end.
+window.onDoomStats = function (kills, totalKills, items, totalItems, secrets, totalSecrets, seconds) {
+  Object.assign(state, {
+    kills,
+    items,
+    secrets,
+    totalKills,
+    totalItems,
+    totalSecrets,
+    timeSeconds: seconds,
+  })
+}
+
 function levelEnded(outcome, episode, map, kills, totalKills, items, totalItems,
                     secrets, totalSecrets, seconds) {
   const payload = {
