@@ -1,0 +1,15 @@
+@import 'frappe-ui/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The engine draws 640x400; keep it crisp when scaled. */
+canvas.doom-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}

@@ -1,0 +1,55 @@
+{
+ "doctype": "DocType",
+ "name": "Doom Weapon",
+ "module": "Doom Manager",
+ "istable": 0,
+ "is_submittable": 0,
+ "custom": 0,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "weapon_name",
+   "label": "Weapon Name",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ammo_type",
+   "label": "Ammo Type",
+   "fieldtype": "Select",
+   "options": "Bullets\nShells\nRockets\nCells\nMelee",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "fire_rate",
+   "label": "Fire Rate (rounds/sec)",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "damage",
+   "label": "Damage per Shot",
+   "fieldtype": "Int",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sprite",
+   "label": "Sprite",
+   "fieldtype": "Attach Image"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0
+  }
+ ]
+}

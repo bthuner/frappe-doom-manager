@@ -1,0 +1,49 @@
+{
+ "doctype": "DocType",
+ "name": "Doom Level Monster",
+ "module": "Doom Manager",
+ "istable": 1,
+ "is_submittable": 0,
+ "custom": 0,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "monster",
+   "label": "Monster",
+   "fieldtype": "Link",
+   "options": "Doom Monster",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "pos_x",
+   "label": "Pos X",
+   "fieldtype": "Float",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "pos_y",
+   "label": "Pos Y",
+   "fieldtype": "Float",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "angle",
+   "label": "Angle",
+   "fieldtype": "Int"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0
+  }
+ ]
+}

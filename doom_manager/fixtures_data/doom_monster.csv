@@ -1,0 +1,6 @@
+monster_name,health,damage_min,damage_max,ai_behavior
+Imp,60,3,24,Ranged
+Demon,150,2,20,Melee
+Cacodemon,400,5,40,Flying
+Baron of Hell,1000,20,80,Boss
+Zombieman,20,3,15,Ranged

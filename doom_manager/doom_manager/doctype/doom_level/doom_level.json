@@ -1,0 +1,66 @@
+{
+ "doctype": "DocType",
+ "name": "Doom Level",
+ "module": "Doom Manager",
+ "istable": 0,
+ "is_submittable": 0,
+ "custom": 0,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "level_name",
+   "label": "Level Name",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "episode",
+   "label": "Episode",
+   "fieldtype": "Data",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "par_time_seconds",
+   "label": "Par Time (seconds)",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "music_track",
+   "label": "Music Track",
+   "fieldtype": "Attach"
+  },
+  {
+   "fieldname": "difficulty",
+   "label": "Difficulty",
+   "fieldtype": "Select",
+   "options": "Easy\nMedium\nHard\nNightmare"
+  },
+  {
+   "fieldname": "monster_spawns",
+   "label": "Monster Spawns",
+   "fieldtype": "Table",
+   "options": "Doom Level Monster"
+  },
+  {
+   "fieldname": "item_placements",
+   "label": "Item Placements",
+   "fieldtype": "Table",
+   "options": "Doom Level Item"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0
+  }
+ ]
+}

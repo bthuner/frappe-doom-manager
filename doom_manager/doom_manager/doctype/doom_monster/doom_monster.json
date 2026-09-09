@@ -1,0 +1,71 @@
+{
+ "doctype": "DocType",
+ "name": "Doom Monster",
+ "module": "Doom Manager",
+ "istable": 0,
+ "is_submittable": 0,
+ "custom": 0,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "monster_name",
+   "label": "Monster Name",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "health",
+   "label": "Health",
+   "fieldtype": "Int",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "damage_min",
+   "label": "Damage Min",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "damage_max",
+   "label": "Damage Max",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "ai_behavior",
+   "label": "AI Behavior",
+   "fieldtype": "Select",
+   "options": "Melee\nRanged\nFlying\nBoss",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sprite",
+   "label": "Sprite",
+   "fieldtype": "Attach Image"
+  },
+  {
+   "fieldname": "sound_alert",
+   "label": "Alert Sound",
+   "fieldtype": "Attach"
+  },
+  {
+   "fieldname": "description",
+   "label": "Description",
+   "fieldtype": "Small Text"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0
+  }
+ ]
+}

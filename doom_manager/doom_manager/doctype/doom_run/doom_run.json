@@ -1,0 +1,124 @@
+{
+ "doctype": "DocType",
+ "name": "Doom Run",
+ "module": "Doom Manager",
+ "istable": 0,
+ "is_submittable": 1,
+ "custom": 0,
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "player",
+   "label": "Player",
+   "fieldtype": "Link",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "level",
+   "label": "Level",
+   "fieldtype": "Link",
+   "options": "Doom Level",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "outcome",
+   "label": "Outcome",
+   "fieldtype": "Select",
+   "options": "In Progress\nCompleted\nDied",
+   "default": "In Progress",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "stats_section",
+   "label": "Statistics",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "kills",
+   "label": "Kills",
+   "fieldtype": "Int",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "items",
+   "label": "Items",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "secrets",
+   "label": "Secrets",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "stats_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_kills",
+   "label": "Total Kills",
+   "fieldtype": "Int",
+   "description": "Monsters present in the level"
+  },
+  {
+   "fieldname": "total_items",
+   "label": "Total Items",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "total_secrets",
+   "label": "Total Secrets",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "result_section",
+   "label": "Result",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "time_seconds",
+   "label": "Time (seconds)",
+   "fieldtype": "Int",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "deaths",
+   "label": "Deaths",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "result_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "completed",
+   "label": "Completed",
+   "fieldtype": "Check",
+   "read_only": 1,
+   "description": "Set when the level was finished by reaching the exit"
+  },
+  {
+   "fieldname": "run_date",
+   "label": "Run Date",
+   "fieldtype": "Datetime",
+   "default": "now"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1
+  }
+ ]
+}

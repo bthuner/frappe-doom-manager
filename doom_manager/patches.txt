@@ -1,0 +1,6 @@
+# Frappe's parse_as_configfile() looks up each patch type by section name and
+# throws if one is missing, so both sections must exist even when empty.
+[pre_model_sync]
+
+[post_model_sync]
+doom_manager.patches.v1_0.set_run_outcome
