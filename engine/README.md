@@ -8,7 +8,7 @@ app (sibling repo `../doom_manager_frappe_app/doom_manager`). The game runs at
 ```
 GenericDoom_Frappe/          this repo: build pipeline + docker stack
   doomgeneric_emscripten.c   platform backend (main loop, framebuffer hand-off, key queue)
-  patch_wi_stuff.py          injects the level-complete bridge into wi_stuff.c
+  patch_doom_bridge.py       injects the run-tracking hooks into g_game.c + wi_stuff.c
   build.sh                   emcc build -> ../doom_manager_frappe_app/.../public/js/doom.{js,wasm,data}
   docker/compose.yaml        Frappe v15 + MariaDB + Redis with doom_manager installed
   doom1.wad                  shareware IWAD (not committed elsewhere; drop yours here)
@@ -74,12 +74,34 @@ map. Cheat codes are typed as usual (`iddqd`, `idkfa`, `idclev12`).
 - `main()` drives `doomgeneric_Tick` with `emscripten_set_main_loop` (no
   ASYNCIFY; `DG_SleepMs` is a no-op because `TryRunTics` already yields once a
   tic has elapsed).
-- `patch_wi_stuff.py` adds an `EM_ASM` call at the top of `WI_initVariables`
-  that fires `window.onDoomLevelComplete(epsd, last, kills%, items%, secrets%,
-  seconds)`. `doom_engine.js` turns that into
-  `DoomBridge.onLevelComplete({level: "E1M1", ...})` and `doom_run.js` posts it
-  to the whitelisted `doom_manager.api.record_run`, which get-or-creates the
-  `Doom Level` and inserts + submits a `Doom Run` for the logged-in user.
+- `patch_doom_bridge.py` adds three `EM_ASM` hooks, so that a `Doom Run` spans a
+  whole level instead of being written once at the end:
+
+  | Hook | Injected into | Fires |
+  |---|---|---|
+  | `onDoomLevelStart(ep, map, tk, ti, ts)` | `g_game.c` `G_Ticker` | a level began |
+  | `onDoomLevelComplete(ep, map, k, tk, i, ti, s, ts, secs)` | `wi_stuff.c` `WI_initVariables` | the exit was reached |
+  | `onDoomGameOver(...same...)` | `g_game.c` `G_DoReborn` | the player died |
+
+  Episode and map are 1-based on all three; counts are raw with the level total
+  alongside (6 kills out of 9), not the percentages the intermission shows.
+  `useDoomEngine.js` turns them into `onLevelStart` / `onLevelEnd` listeners and
+  `Play.vue` calls the whitelisted `doom_manager.api.start_run` — which
+  get-or-creates the `Doom Level` and inserts a **draft** `Doom Run` — then
+  `finish_run`, which fills in the counts and submits it. `outcome` is
+  `Completed` or `Died`.
+- The start hook lives in `G_Ticker`, not in the obvious `G_DoLoadLevel`, because
+  `G_DoPlayDemo` calls `G_InitNew` (which loads the level and clears
+  `demoplayback`) and only sets `demoplayback = true` *after* it returns. Inside
+  `G_DoLoadLevel` the flag reads false even for the attract-mode demos, so every
+  idle title screen would open a run. Testing `(levelstarttic, gamemap)` once per
+  tic instead sees the flag settled, one tic later.
+- Doom 1 has no GAME OVER screen: in single player, dying goes through
+  `G_DoReborn`, which sets `gameaction = ga_loadlevel`. That reload bumps
+  `levelstarttic`, so the next run opens by itself.
+- A player who closes the tab mid-level leaves a draft `Doom Run` behind. Drafts
+  are `docstatus 0`, so `get_runs` and `get_leaderboard` (which filter on
+  `docstatus 1`) ignore them.
 
 ## History / gotchas
 

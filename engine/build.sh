@@ -42,8 +42,8 @@ echo "== Copying Emscripten backend into the source tree =="
 cp "$BUILD_ROOT/doomgeneric_emscripten.c" "$DG_SRC/"
 rm -f "$DG_SRC/sound_stubs.c"
 
-echo "== Patching wi_stuff.c (idempotent) =="
-python3 "$BUILD_ROOT/patch_wi_stuff.py" "$DG_SRC/wi_stuff.c"
+echo "== Injecting the run-tracking bridge (idempotent) =="
+python3 "$BUILD_ROOT/patch_doom_bridge.py" "$DG_SRC"
 
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
