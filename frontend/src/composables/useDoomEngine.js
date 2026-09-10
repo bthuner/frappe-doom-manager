@@ -237,7 +237,12 @@ function boot() {
       window.createDoomModule({
         canvas,
         locateFile: (path) => ASSET_BASE + path,
-        arguments: ['-iwad', '/doom1.wad'],
+        // No -iwad: hardcoding the filename here duplicated a decision that
+        // lives in build.sh, and the two silently drifted apart the moment the
+        // shipped WAD changed. Left alone, the engine searches for every IWAD
+        // name it knows (d_iwad.c iwads[]) in FILES_DIR "." -- which is / under
+        // Emscripten, where build.sh preloads whichever WAD it used.
+        arguments: [],
         print: (text) => console.log('[doom]', text),
         printErr: (text) => console.warn('[doom]', text),
       }),
