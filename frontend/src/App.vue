@@ -46,6 +46,15 @@
         </keep-alive>
       </router-view>
     </main>
+
+    <!-- The engine binary is distributed from this page, so the GPL-2.0 notice
+         and the offer of source belong here, not only in the repository. -->
+    <footer class="mx-auto w-full max-w-7xl px-4 pb-6 text-xs text-ink-gray-5 sm:px-6">
+      Engine: <a class="underline" href="https://github.com/ozkl/doomgeneric">DoomGeneric</a>
+      compiled to WebAssembly, GPL-2.0 — source and build script in the project repository.
+      Game data: <a class="underline" href="https://freedoom.github.io/">Freedoom</a> Phase 1,
+      BSD 3-clause. Not affiliated with id Software.
+    </footer>
   </div>
 </template>
 
