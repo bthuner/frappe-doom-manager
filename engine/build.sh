@@ -87,7 +87,7 @@ emcc \
   -s ENVIRONMENT=web \
   -s MODULARIZE=1 \
   -s EXPORT_NAME=createDoomModule \
-  -s EXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPU32 \
+  -s EXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPU32,FS \
   -s EXPORTED_FUNCTIONS=_main,_DG_PushKey \
   -s FORCE_FILESYSTEM=1 \
   -o "$OUT_DIR/doom.js"
@@ -104,7 +104,10 @@ cp "$BUILD_ROOT/$IWAD" "$OUT_DIR/$IWAD"
 # page itself is no_cache, so it can hand the SPA a version to append as a query
 # string; that is enough to bust the three engine files together.
 echo "== Writing the build manifest =="
-VERSION="$(sha256sum "$OUT_DIR/doom.wasm" | cut -c1-12)"
+# Hash both files: EXPORTED_RUNTIME_METHODS and friends change doom.js without
+# touching doom.wasm, so hashing the wasm alone would leave browsers pinned to a
+# stale glue script under an unchanged version.
+VERSION="$(cat "$OUT_DIR/doom.js" "$OUT_DIR/doom.wasm" | sha256sum | cut -c1-12)"
 cat > "$OUT_DIR/doom.build.json" <<JSON
 {
   "version": "$VERSION",
