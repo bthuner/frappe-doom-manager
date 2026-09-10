@@ -4,6 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DOOM · Frappe</title>
+    <script>
+      // Set the theme before first paint, otherwise every load flashes light
+      // while Vue boots. Mirrors frappe-ui's useTheme(): an explicit stored
+      // choice wins, anything else (including "system") follows the OS.
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('theme')
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.setAttribute('data-theme', theme)
+        } catch (e) {
+          /* private mode: fall through to the light default */
+        }
+      })()
+    </script>
   </head>
   <body class="h-full">
     <div id="app" class="h-full"></div>

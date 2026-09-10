@@ -4,7 +4,10 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
+    "gen:theme": "node scripts/gen-theme-vars.mjs",
+    "predev": "node scripts/gen-theme-vars.mjs",
     "dev": "FRAPPE_WEB_SERVER_PORT=8099 vite",
+    "prebuild": "node scripts/gen-theme-vars.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

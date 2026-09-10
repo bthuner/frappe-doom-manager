@@ -14,6 +14,14 @@
         </nav>
 
         <div class="ml-auto flex items-center gap-3">
+          <Button
+            variant="ghost"
+            :icon="isDark ? 'sun' : 'moon'"
+            :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+            :title="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+            @click="toggleTheme"
+          />
+
           <template v-if="isLoggedIn">
             <div class="flex items-center gap-2">
               <Avatar :label="session.fullName" size="sm" />
@@ -42,11 +50,34 @@
 </template>
 
 <script setup>
-import { Avatar, Badge, Button } from 'frappe-ui'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { Avatar, Badge, Button, useTheme } from 'frappe-ui'
 import { session, isLoggedIn, logout, loginUrl } from '@/session'
 
 const nav = [
   { name: 'Play', label: 'Play', icon: 'crosshair' },
   { name: 'Runs', label: 'Runs', icon: 'list' },
 ]
+
+// useTheme owns the data-theme attribute and the stored choice, and starts at
+// 'system'. It exposes currentTheme as 'light' | 'dark' | 'system', so the icon
+// needs the *resolved* theme -- and 'system' has to stay reactive to the OS
+// flipping, which currentTheme alone does not report.
+const { currentTheme, setTheme } = useTheme()
+
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
+const systemIsDark = ref(prefersDark.matches)
+const onSystemChange = (event) => (systemIsDark.value = event.matches)
+
+onMounted(() => prefersDark.addEventListener('change', onSystemChange))
+onBeforeUnmount(() => prefersDark.removeEventListener('change', onSystemChange))
+
+const isDark = computed(() =>
+  currentTheme.value === 'system' ? systemIsDark.value : currentTheme.value === 'dark',
+)
+
+// Not useTheme's own toggleTheme: it flips currentTheme, so from 'system' on a
+// dark OS it would pick 'dark' and the first click would appear to do nothing.
+// Flipping the resolved theme always changes what the user sees.
+const toggleTheme = () => setTheme(isDark.value ? 'light' : 'dark')
 </script>

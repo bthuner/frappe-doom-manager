@@ -1,4 +1,8 @@
 @import 'frappe-ui/style.css';
+/* Defines the --surface, --ink and --outline custom properties that
+   frappe-ui's colour tokens read, for both themes. Generated from
+   frappe-ui's own palette by scripts/gen-theme-vars.mjs. */
+@import './theme-variables.css';
 
 @tailwind base;
 @tailwind components;
