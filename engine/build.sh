@@ -6,7 +6,8 @@ set -euo pipefail
 #
 # Prereqs:
 #   1. emcc on PATH (emsdk activated, or a distro emscripten package)
-#   2. A legally owned doom1.wad (shareware is fine) next to this script
+#   2. An IWAD next to this script. freedoom1.wad ships with the repo (BSD);
+#      drop your own doom1.wad or doom.wad beside it to play the real thing.
 #
 # Usage:
 #   ./build.sh
@@ -33,9 +34,25 @@ if [ ! -f "$DG_SRC/doomgeneric.c" ]; then
   fi
 fi
 
-if [ ! -f "$BUILD_ROOT/doom1.wad" ]; then
-  echo "ERROR: place a doom1.wad (shareware or owned copy) at $BUILD_ROOT/doom1.wad"
+# The engine locates its IWAD by filename: d_iwad.c walks the iwads[] table
+# looking in FILES_DIR ("." -- which is / under Emscripten), so the preload
+# target below must keep the file's own name.
+#
+# Freedoom is the default precisely because it is the only IWAD here that may be
+# redistributed. Opting into a personal one is deliberate and never automatic --
+# picking up a doom1.wad just because it happens to sit in the directory would
+# quietly bake a non-redistributable WAD into the published doom.data.
+#   IWAD=doom1.wad ./build.sh
+IWAD="${IWAD:-freedoom1.wad}"
+
+if [ ! -f "$BUILD_ROOT/$IWAD" ]; then
+  echo "ERROR: IWAD '$IWAD' not found at $BUILD_ROOT/$IWAD"
   exit 1
+fi
+echo "== Using IWAD: $IWAD =="
+
+if [ "$IWAD" != "freedoom1.wad" ]; then
+  echo "   NOTE: $IWAD is not redistributable -- keep this build local."
 fi
 
 echo "== Copying Emscripten backend into the source tree =="
@@ -72,7 +89,7 @@ emcc \
   -s EXPORT_NAME=createDoomModule \
   -s EXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPU32 \
   -s EXPORTED_FUNCTIONS=_main,_DG_PushKey \
-  --preload-file "$BUILD_ROOT/doom1.wad@/doom1.wad" \
+  --preload-file "$BUILD_ROOT/$IWAD@/$IWAD" \
   -o "$OUT_DIR/doom.js"
 
 echo "== Done =="

@@ -11,7 +11,8 @@ GenericDoom_Frappe/          this repo: build pipeline + docker stack
   patch_doom_bridge.py       injects the run-tracking hooks into g_game.c + wi_stuff.c
   build.sh                   emcc build -> ../doom_manager_frappe_app/.../public/js/doom.{js,wasm,data}
   docker/compose.yaml        Frappe v15 + MariaDB + Redis with doom_manager installed
-  doom1.wad                  shareware IWAD (not committed elsewhere; drop yours here)
+  freedoom1.wad              BSD-licensed IWAD, the only one shipped (see LICENSES.md)
+  LICENSES.md                GPL-2.0 offer of source for the engine, plus the rest
   doomgeneric/               upstream submodule, pinned (build.sh inits it if missing)
 ```
 
@@ -25,8 +26,20 @@ git clone --recurse-submodules ssh://git@forge.heeboo.org:2222/thunerbl/frappe-d
 git submodule update --init
 ```
 
-Requires `emcc` (emsdk or a distro emscripten package) and `doom1.wad` in this
-directory (the shareware IWAD is freely redistributable).
+Requires `emcc` (emsdk or a distro emscripten package). The IWAD defaults to
+the bundled `freedoom1.wad`, which is BSD-licensed and the only game data this
+project may redistribute.
+
+If you own Doom, build with it instead — locally:
+
+```bash
+IWAD=doom1.wad ./build.sh    # or doom.wad
+```
+
+id Software's shareware `doom1.wad` is **not** shipped. Its licence covers
+redistributing the complete, unmodified shareware package, not a lone IWAD
+served over HTTP, so a build made with it must stay local. See `LICENSES.md`,
+which also carries the GPL-2.0 offer of source for the compiled engine.
 
 ```bash
 ./build.sh

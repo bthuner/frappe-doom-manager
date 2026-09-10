@@ -8,9 +8,12 @@ doom.js
 doom.wasm
 doom.data
 
-# Copies accidentelles du WAD (expansion shell non quotée)
+# IWADs. freedoom1.wad is the exception: BSD-licensed, and the only one here
+# that may be redistributed. A personally owned doom.wad / doom1.wad is fine to
+# build with locally (IWAD=doom1.wad ./build.sh) but must never be committed.
+*.wad
+!freedoom1.wad
 $doom1.wad
-.wad
 
 # Ancien checkout dupliqué, remplacé par le submodule doomgeneric/
 doomgeneric.pa/
