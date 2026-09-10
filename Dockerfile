@@ -11,7 +11,11 @@ RUN cd frontend && npm ci --no-audit --no-fund
 COPY . .
 RUN cd frontend && npm run build
 
-FROM frappe/erpnext:v15.121.1
+# Dokos stack instead of Frappe/ERPNext. Dodock (the Frappe fork) keeps the
+# frappe-bench layout and the `frappe` app name, so the paths below are
+# unchanged. The site installs doom_manager only, so this exercises Dodock --
+# the framework -- rather than the Dokos business app.
+FROM registry.gitlab.com/dokos/dokos:latest
 
 USER frappe
 WORKDIR /home/frappe/frappe-bench
