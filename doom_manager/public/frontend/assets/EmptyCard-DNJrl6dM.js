@@ -1,0 +1,2 @@
+import{o,c as s,v as c,u as i,X as l,t as _}from"./index-Duulk9qa.js";const u=(e,r)=>{const t=e.__vccOpts||e;for(const[a,n]of r)t[a]=n;return t},d={class:"flex items-center justify-center rounded-lg border border-dashed border-outline-gray-3 px-4 py-8 text-sm text-ink-gray-5"},p={key:1},f={__name:"EmptyCard",props:{loading:Boolean,text:{type:String,default:"Nothing here yet."}},setup(e){return(r,t)=>(o(),s("div",d,[e.loading?(o(),c(i(l),{key:0,class:"h-4 w-4"})):(o(),s("span",p,_(e.text),1))]))}};export{u as _,f as a};
+//# sourceMappingURL=EmptyCard-DNJrl6dM.js.map

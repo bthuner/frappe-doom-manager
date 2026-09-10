@@ -66,6 +66,7 @@ import { session, isLoggedIn, logout, loginUrl } from '@/session'
 const nav = [
   { name: 'Play', label: 'Play', icon: 'crosshair' },
   { name: 'Runs', label: 'Runs', icon: 'list' },
+  { name: 'Iwads', label: 'Game data', icon: 'database' },
 ]
 
 // useTheme owns the data-theme attribute and the stored choice, and starts at
