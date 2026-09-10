@@ -89,8 +89,34 @@ emcc \
   -s EXPORT_NAME=createDoomModule \
   -s EXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPU32 \
   -s EXPORTED_FUNCTIONS=_main,_DG_PushKey \
-  --preload-file "$BUILD_ROOT/$IWAD@/$IWAD" \
+  -s FORCE_FILESYSTEM=1 \
   -o "$OUT_DIR/doom.js"
 
+# The IWAD is no longer baked into the binary. It is fetched at runtime and
+# written into MEMFS before main(), so that a player can bring their own without
+# rebuilding the engine -- and so that a 27 MB WAD is not re-downloaded whenever
+# the engine changes. The shipped Freedoom becomes a plain static asset.
+echo "== Publishing the default IWAD as a static asset =="
+cp "$BUILD_ROOT/$IWAD" "$OUT_DIR/$IWAD"
+
+# Asset URLs are not content-hashed and Frappe serves /assets without a
+# Cache-Control header, so a browser can hold a stale engine indefinitely. The
+# page itself is no_cache, so it can hand the SPA a version to append as a query
+# string; that is enough to bust the three engine files together.
+echo "== Writing the build manifest =="
+VERSION="$(sha256sum "$OUT_DIR/doom.wasm" | cut -c1-12)"
+cat > "$OUT_DIR/doom.build.json" <<JSON
+{
+  "version": "$VERSION",
+  "default_iwad": "$IWAD",
+  "default_iwad_size": $(stat -c%s "$OUT_DIR/$IWAD"),
+  "default_iwad_sha256": "$(sha256sum "$OUT_DIR/$IWAD" | cut -d' ' -f1)"
+}
+JSON
+cat "$OUT_DIR/doom.build.json"
+
+# doom.data only exists in builds that still preloaded a WAD; drop the stale one.
+rm -f "$OUT_DIR/doom.data"
+
 echo "== Done =="
-ls -la "$OUT_DIR"/doom.js "$OUT_DIR"/doom.wasm "$OUT_DIR"/doom.data
+ls -la "$OUT_DIR"/doom.js "$OUT_DIR"/doom.wasm "$OUT_DIR/$IWAD" "$OUT_DIR"/doom.build.json
