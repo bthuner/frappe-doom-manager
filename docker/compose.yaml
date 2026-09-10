@@ -1,9 +1,9 @@
-name: doomfrappe
+name: doomdokos
 
 services:
   backend:
     build: ../../doom_manager_frappe_app/doom_manager
-    image: doom-frappe:local
+    image: doom-dokos:local
     networks:
       - frappe_network
     deploy:
@@ -22,7 +22,7 @@ services:
         condition: service_completed_successfully
 
   configurator:
-    image: doom-frappe:local
+    image: doom-dokos:local
     networks:
       - frappe_network
     deploy:
@@ -51,7 +51,7 @@ services:
       - logs:/home/frappe/frappe-bench/logs
 
   create-site:
-    image: doom-frappe:local
+    image: doom-dokos:local
     networks:
       - frappe_network
     deploy:
@@ -111,7 +111,7 @@ services:
       - db-data:/var/lib/mysql
 
   frontend:
-    image: doom-frappe:local
+    image: doom-dokos:local
     networks:
       - frappe_network
     depends_on:
@@ -135,10 +135,10 @@ services:
       - sites:/home/frappe/frappe-bench/sites
       - logs:/home/frappe/frappe-bench/logs
     ports:
-      - "8099:8080"
+      - "8098:8080"
 
   queue-long:
-    image: doom-frappe:local
+    image: doom-dokos:local
     networks:
       - frappe_network
     deploy:
@@ -160,7 +160,7 @@ services:
         condition: service_completed_successfully
 
   queue-short:
-    image: doom-frappe:local
+    image: doom-dokos:local
     networks:
       - frappe_network
     deploy:
@@ -200,7 +200,7 @@ services:
         condition: on-failure
 
   scheduler:
-    image: doom-frappe:local
+    image: doom-dokos:local
     networks:
       - frappe_network
     deploy:
@@ -217,7 +217,7 @@ services:
         condition: service_completed_successfully
 
   websocket:
-    image: doom-frappe:local
+    image: doom-dokos:local
     networks:
       - frappe_network
     deploy:
