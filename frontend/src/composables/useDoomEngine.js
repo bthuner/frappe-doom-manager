@@ -274,7 +274,14 @@ function boot() {
         // then works the game out from the lumps (MAP01 vs E1M1) instead.
         arguments: ['-iwad', path],
         preRun: [
-          (Module) => Module.FS.writeFile(path, bytes),
+          (Module) => {
+            // FS has to be in EXPORTED_RUNTIME_METHODS for this to exist; without
+            // it the failure is a bare "cannot read property writeFile".
+            if (!Module.FS) {
+              throw new Error('Engine built without FS export: rerun build.sh')
+            }
+            Module.FS.writeFile(path, bytes)
+          },
         ],
         print: (text) => console.log('[doom]', text),
         printErr: (text) => console.warn('[doom]', text),
