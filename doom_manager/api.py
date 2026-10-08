@@ -1,3 +1,6 @@
+import json
+import os
+
 import frappe
 from frappe import _
 from frappe.utils import cint
@@ -198,3 +201,224 @@ def get_leaderboard():
 		if entry["most_kills"] is None or cint(r.kills) > cint(entry["most_kills"].kills):
 			entry["most_kills"] = r
 	return sorted(board.values(), key=lambda e: e["level_name"])
+
+
+# ---------------------------------------------------------------- IWADs -----
+#
+# The engine no longer carries a WAD: build.sh emits doom.js/doom.wasm plus the
+# shipped Freedoom as a separate static asset, and the page fetches whichever
+# IWAD applies to the session and writes it into the engine's filesystem before
+# main() runs. That is what lets a player bring their own without rebuilding.
+#
+# The rule that shapes all of this: a personal IWAD is somebody's copy of a
+# commercial game. It is playable by its owner and by nobody else, and it can
+# never become the default, which is what guests are served.
+
+_MANIFEST_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "public", "js", "doom.build.json"
+)
+_ASSET_BASE = "/assets/doom_manager/js/"
+
+
+def build_manifest():
+    """Engine version and shipped IWAD, written by build.sh."""
+    try:
+        with open(_MANIFEST_PATH) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _iwad_payload(doc=None):
+    """What the browser needs to fetch and mount an IWAD."""
+    if doc is None:
+        manifest = build_manifest()
+        file_name = manifest.get("default_iwad")
+        if not file_name:
+            return None
+        return {
+            "name": None,
+            "title": "Freedoom: Phase 1",
+            "file_name": file_name,
+            "file_size": manifest.get("default_iwad_size"),
+            "is_free": True,
+            "is_shipped": True,
+            "owned": False,
+            # Static, public, BSD-licensed: no permission check to do, and the
+            # browser can cache it across engine rebuilds.
+            "url": _ASSET_BASE + file_name,
+        }
+
+    return {
+        "name": doc.name,
+        "title": doc.iwad_title,
+        "file_name": doc.file_name,
+        "file_size": doc.file_size,
+        "is_free": bool(doc.is_free),
+        "is_shipped": False,
+        "owned": bool(doc.player),
+        "url": "/api/method/doom_manager.api.download_iwad?iwad=" + doc.name,
+    }
+
+
+def _readable_iwad(name, user):
+    doc = frappe.get_doc("Doom Iwad", name)
+    if not doc.readable_by(user):
+        frappe.throw(_("That IWAD belongs to another player"), frappe.PermissionError)
+    return doc
+
+
+@frappe.whitelist(allow_guest=True)
+def list_iwads():
+    """Global IWADs plus the caller's own. Never anyone else's."""
+    user = frappe.session.user
+    rows = frappe.get_all(
+        "Doom Iwad",
+        fields=["name", "iwad_title", "file_name", "file_size", "is_free", "is_default", "player"],
+        filters={"player": ("in", ["", user] if user != "Guest" else [""])},
+        order_by="player asc, iwad_title asc",
+    )
+    out = [_iwad_payload()]  # the shipped Freedoom is always available
+    for r in rows:
+        out.append(
+            {
+                "name": r.name,
+                "title": r.iwad_title,
+                "file_name": r.file_name,
+                "file_size": r.file_size,
+                "is_free": bool(r.is_free),
+                "is_shipped": False,
+                "owned": r.player == user and bool(r.player),
+                "is_default": bool(r.is_default),
+                "url": "/api/method/doom_manager.api.download_iwad?iwad=" + r.name,
+            }
+        )
+    active = get_active_iwad()
+    for entry in out:
+        entry["active"] = entry["name"] == active["name"]
+    return out
+
+
+@frappe.whitelist(allow_guest=True)
+def get_active_iwad():
+    """The IWAD this session should play: the player's choice, else the global
+    default, else the shipped Freedoom."""
+    user = frappe.session.user
+
+    if user != "Guest":
+        chosen = frappe.db.get_value("Doom Player Setting", user, "iwad")
+        if chosen and frappe.db.exists("Doom Iwad", chosen):
+            doc = frappe.get_doc("Doom Iwad", chosen)
+            if doc.readable_by(user):
+                return _iwad_payload(doc)
+
+    default = frappe.db.get_value("Doom Iwad", {"is_default": 1}, "name")
+    if default:
+        return _iwad_payload(frappe.get_doc("Doom Iwad", default))
+
+    return _iwad_payload()
+
+
+@frappe.whitelist()
+def register_iwad(file_url, title=None):
+    """Turn a file already uploaded through Frappe into a Doom Iwad owned by the
+    caller. The controller hashes it, rejects anything that is not an IWAD, and
+    decides whether it is free."""
+    player = _require_user()
+
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    if file_doc.owner != player and "System Manager" not in frappe.get_roles(player):
+        frappe.throw(_("That upload belongs to another user"), frappe.PermissionError)
+
+    if not file_doc.is_private:
+        file_doc.is_private = 1
+        file_doc.save(ignore_permissions=True)
+
+    doc = frappe.get_doc(
+        {
+            "doctype": "Doom Iwad",
+            "iwad_title": (title or "").strip() or os.path.basename(file_url),
+            "wad_file": file_url,
+            "player": player,
+        }
+    )
+    doc.insert(ignore_permissions=True)
+    frappe.db.commit()
+
+    frappe.logger("doom_manager").info(
+        "Doom Iwad %s registered by %s (%s bytes, free=%s)",
+        doc.name, player, doc.file_size, bool(doc.is_free),
+    )
+    return _iwad_payload(doc)
+
+
+@frappe.whitelist()
+def select_iwad(iwad=None):
+    """Remember which IWAD this player wants. Passing nothing clears the choice
+    and falls back to the default."""
+    player = _require_user()
+
+    if iwad:
+        _readable_iwad(iwad, player)
+
+    if frappe.db.exists("Doom Player Setting", player):
+        setting = frappe.get_doc("Doom Player Setting", player)
+        setting.iwad = iwad or None
+        setting.flags.ignore_permissions = True
+        setting.save(ignore_permissions=True)
+    else:
+        setting = frappe.get_doc(
+            {"doctype": "Doom Player Setting", "player": player, "iwad": iwad or None}
+        )
+        setting.flags.ignore_permissions = True
+        setting.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return get_active_iwad()
+
+
+@frappe.whitelist()
+def set_default_iwad(iwad):
+    """Administrators only. The controller refuses anything but a free IWAD."""
+    _require_user()
+    if "System Manager" not in frappe.get_roles(frappe.session.user):
+        frappe.throw(_("Only an administrator can change the default"), frappe.PermissionError)
+
+    doc = frappe.get_doc("Doom Iwad", iwad)
+    doc.is_default = 1
+    doc.flags.ignore_permissions = True
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return _iwad_payload(doc)
+
+
+@frappe.whitelist()
+def delete_iwad(iwad):
+    """Remove one of the caller's own IWADs."""
+    player = _require_user()
+    doc = frappe.get_doc("Doom Iwad", iwad)
+    if doc.player != player:
+        frappe.throw(_("You can only remove your own IWADs"), frappe.PermissionError)
+
+    if frappe.db.get_value("Doom Player Setting", player, "iwad") == iwad:
+        frappe.db.set_value("Doom Player Setting", player, "iwad", None)
+
+    frappe.delete_doc("Doom Iwad", iwad, ignore_permissions=True)
+    frappe.db.commit()
+    return get_active_iwad()
+
+
+@frappe.whitelist(allow_guest=True)
+def download_iwad(iwad):
+    """Stream an IWAD to the session that is allowed to have it.
+
+    Guests reach this only for global IWADs; a personal one is refused by
+    readable_by(), so one player's copy of a commercial game never leaves their
+    own session."""
+    doc = _readable_iwad(iwad, frappe.session.user)
+
+    with open(doc.full_path(), "rb") as f:
+        content = f.read()
+
+    frappe.local.response.filename = doc.file_name
+    frappe.local.response.filecontent = content
+    frappe.local.response.type = "download"

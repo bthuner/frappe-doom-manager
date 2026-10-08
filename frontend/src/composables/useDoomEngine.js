@@ -1,5 +1,5 @@
 // Vue wrapper around the DoomGeneric WASM build (doom.js / doom.wasm / doom.data
-// from GenericDoom_Frappe/build.sh). The engine is a process-wide singleton:
+// from engine/build.sh). The engine is a process-wide singleton:
 // emscripten's main loop cannot be torn down, so the module is created once
 // and simply re-attached to whichever <canvas> is currently mounted.
 import { reactive, readonly } from 'vue'
@@ -60,6 +60,7 @@ const state = reactive({
   timeSeconds: null,
   outcome: null, // null while the level is running, then 'Completed' | 'Died'
   completedRuns: 0,
+  iwad: null, // which IWAD the engine actually booted with
 })
 
 let module = null
@@ -99,7 +100,7 @@ window.DoomBridge = Object.assign(window.DoomBridge || {}, {
   onTitle() {},
 })
 
-// The three hooks injected by GenericDoom_Frappe/patch_doom_bridge.py. Episode
+// The three hooks injected by engine/patch_doom_bridge.py. Episode
 // and map are 1-based on all of them, and every count comes with its level
 // total. A run is opened on start and closed on end, whichever way it ends.
 const levelNameFor = (episode, map) => 'E' + episode + 'M' + map
@@ -217,31 +218,75 @@ window.addEventListener('mouseup', (ev) => {
   if (active) pushKey(0, ev.button === 2 ? KEY.USE : KEY.FIRE)
 })
 
+// /assets is served without Cache-Control and the engine filenames are not
+// content-hashed, so a browser will happily keep a stale doom.js or doom.wasm.
+// The page is no_cache and carries the build id, so hanging it on the URL is
+// enough to move all the engine files forward together.
+const BUILD = window.engine_version || 'dev'
+const versioned = (path) => ASSET_BASE + path + '?v=' + encodeURIComponent(BUILD)
+
 function loadScript() {
   if (typeof window.createDoomModule === 'function') return Promise.resolve()
   return new Promise((resolve, reject) => {
     const s = document.createElement('script')
-    s.src = ASSET_BASE + 'doom.js'
+    s.src = versioned('doom.js')
     s.onload = resolve
-    s.onerror = () => reject(new Error('doom.js not found: run GenericDoom_Frappe/build.sh first'))
+    s.onerror = () => reject(new Error('doom.js not found: run engine/build.sh first'))
     document.head.appendChild(s)
   })
+}
+
+// The IWAD is no longer baked into the binary: the server decides which one this
+// session may play (the player's pick, the global default, or the shipped
+// Freedoom) and we mount it into the engine's filesystem before main() runs.
+async function fetchIwad() {
+  const res = await fetch('/api/method/doom_manager.api.get_active_iwad', {
+    headers: { Accept: 'application/json' },
+    credentials: 'same-origin',
+  })
+  if (!res.ok) throw new Error('Could not ask the server which IWAD to use')
+  const iwad = (await res.json()).message
+  if (!iwad) throw new Error('No IWAD available: run engine/build.sh')
+
+  // The shipped WAD is a static asset and gets the build id; a stored one comes
+  // through a permission-checked endpoint and must not be cache-busted by it.
+  const url = iwad.is_shipped ? versioned(iwad.file_name) : iwad.url
+  state.message = 'Loading ' + iwad.title + '…'
+
+  const wad = await fetch(url, { credentials: 'same-origin' })
+  if (!wad.ok) throw new Error('Could not download ' + iwad.file_name)
+  return { iwad, bytes: new Uint8Array(await wad.arrayBuffer()) }
 }
 
 function boot() {
   if (modulePromise) return modulePromise
   state.status = 'loading'
   state.message = 'Loading DOOM…'
-  modulePromise = loadScript()
-    .then(() =>
-      window.createDoomModule({
+  modulePromise = Promise.all([loadScript(), fetchIwad()])
+    .then(([, { iwad, bytes }]) => {
+      state.iwad = iwad
+      const path = '/' + iwad.file_name
+      return window.createDoomModule({
         canvas,
-        locateFile: (path) => ASSET_BASE + path,
-        arguments: ['-iwad', '/doom1.wad'],
+        locateFile: (p) => versioned(p),
+        // The name is whatever the player uploaded, so it will usually not be
+        // one the engine knows. -iwad skips the name search; D_IdentifyVersion
+        // then works the game out from the lumps (MAP01 vs E1M1) instead.
+        arguments: ['-iwad', path],
+        preRun: [
+          (Module) => {
+            // FS has to be in EXPORTED_RUNTIME_METHODS for this to exist; without
+            // it the failure is a bare "cannot read property writeFile".
+            if (!Module.FS) {
+              throw new Error('Engine built without FS export: rerun build.sh')
+            }
+            Module.FS.writeFile(path, bytes)
+          },
+        ],
         print: (text) => console.log('[doom]', text),
         printErr: (text) => console.warn('[doom]', text),
-      }),
-    )
+      })
+    })
     .then((m) => {
       module = m
       window.DoomBridge.module = m

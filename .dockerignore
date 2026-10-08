@@ -1,3 +1,8 @@
+.git
 frontend/node_modules
 **/__pycache__
 **/*.pyc
+# The engine sources and the compose file are not part of the app; the image
+# only needs the built doom.{js,wasm} already in doom_manager/public/js.
+engine
+docker

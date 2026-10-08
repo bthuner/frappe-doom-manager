@@ -1,0 +1,9 @@
+# Checkout de build de DoomGeneric : le submodule est épinglé, mais build.sh
+# y copie doomgeneric_emscripten.c et y patche wi_stuff.c à chaque build.
+# Voir "ignore = dirty" dans ../.gitmodules.
+
+# Artefacts de compilation (la sortie va dans ../doom_manager/public/js)
+*.o
+doom.js
+doom.wasm
+doom.data

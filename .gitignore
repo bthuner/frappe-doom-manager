@@ -1,0 +1,6 @@
+# IWADs. freedoom1.wad is the exception: BSD-licensed, and the only one here
+# that may be redistributed. A personally owned doom.wad / doom1.wad is fine to
+# build with locally (drop it in engine/, then IWAD=doom1.wad engine/build.sh)
+# but must never be committed.
+*.wad
+!freedoom1.wad
