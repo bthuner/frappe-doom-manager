@@ -1,0 +1,4 @@
+[submodule "engine/doomgeneric"]
+	path = engine/doomgeneric
+	url = https://github.com/ozkl/doomgeneric.git
+	ignore = dirty

@@ -6,20 +6,21 @@ set -euo pipefail
 #
 # Prereqs:
 #   1. emcc on PATH (emsdk activated, or a distro emscripten package)
-#   2. An IWAD next to this script. freedoom1.wad ships with the repo (BSD);
-#      drop your own doom1.wad or doom.wad beside it to play the real thing.
+#   2. An IWAD. freedoom1.wad ships with the repo (BSD), already in place in
+#      doom_manager/public/js/; drop your own doom1.wad or doom.wad next to
+#      this script to play the real thing.
 #
 # Usage:
-#   ./build.sh
+#   engine/build.sh
 #
-# Output: doom.js / doom.wasm / doom.data in
-#   ../doom_manager_frappe_app/doom_manager/doom_manager/public/js/
+# Output: doom.js / doom.wasm / doom.build.json in
+#   doom_manager/public/js/ (the app at the root of this repo)
 
 DOOMGENERIC_REPO="https://github.com/ozkl/doomgeneric.git"
 BUILD_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$BUILD_ROOT/doomgeneric"
 DG_SRC="$SRC_DIR/doomgeneric"
-OUT_DIR="${OUT_DIR:-$BUILD_ROOT/../doom_manager_frappe_app/doom_manager/doom_manager/public/js}"
+OUT_DIR="${OUT_DIR:-$BUILD_ROOT/../doom_manager/public/js}"
 
 command -v emcc >/dev/null || { echo "ERROR: emcc not found on PATH"; exit 1; }
 
@@ -27,7 +28,7 @@ command -v emcc >/dev/null || { echo "ERROR: emcc not found on PATH"; exit 1; }
 # without --recurse-submodules leaves the directory present but empty, so test for
 # an actual source file rather than for the directory.
 if [ ! -f "$DG_SRC/doomgeneric.c" ]; then
-  if [ -f "$BUILD_ROOT/.gitmodules" ]; then
+  if [ -f "$BUILD_ROOT/../.gitmodules" ]; then
     git -C "$BUILD_ROOT" submodule update --init doomgeneric
   else
     git clone "$DOOMGENERIC_REPO" "$SRC_DIR"
@@ -42,14 +43,23 @@ fi
 # redistributed. Opting into a personal one is deliberate and never automatic --
 # picking up a doom1.wad just because it happens to sit in the directory would
 # quietly bake a non-redistributable WAD into the published doom.data.
-#   IWAD=doom1.wad ./build.sh
+#   IWAD=doom1.wad engine/build.sh
 IWAD="${IWAD:-freedoom1.wad}"
 
-if [ ! -f "$BUILD_ROOT/$IWAD" ]; then
-  echo "ERROR: IWAD '$IWAD' not found at $BUILD_ROOT/$IWAD"
+mkdir -p "$OUT_DIR"
+OUT_DIR="$(cd "$OUT_DIR" && pwd)"
+
+# A personal IWAD sits next to this script; the shipped Freedoom already lives
+# in the app's public/js, so there is a single copy of it in the repo.
+if [ -f "$BUILD_ROOT/$IWAD" ]; then
+  IWAD_SRC="$BUILD_ROOT/$IWAD"
+elif [ -f "$OUT_DIR/$IWAD" ]; then
+  IWAD_SRC="$OUT_DIR/$IWAD"
+else
+  echo "ERROR: IWAD '$IWAD' not found in $BUILD_ROOT or $OUT_DIR"
   exit 1
 fi
-echo "== Using IWAD: $IWAD =="
+echo "== Using IWAD: $IWAD_SRC =="
 
 if [ "$IWAD" != "freedoom1.wad" ]; then
   echo "   NOTE: $IWAD is not redistributable -- keep this build local."
@@ -61,9 +71,6 @@ rm -f "$DG_SRC/sound_stubs.c"
 
 echo "== Injecting the run-tracking bridge (idempotent) =="
 python3 "$BUILD_ROOT/patch_doom_bridge.py" "$DG_SRC"
-
-mkdir -p "$OUT_DIR"
-OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 
 cd "$DG_SRC"
 
@@ -97,7 +104,7 @@ emcc \
 # rebuilding the engine -- and so that a 27 MB WAD is not re-downloaded whenever
 # the engine changes. The shipped Freedoom becomes a plain static asset.
 echo "== Publishing the default IWAD as a static asset =="
-cp "$BUILD_ROOT/$IWAD" "$OUT_DIR/$IWAD"
+[ "$IWAD_SRC" = "$OUT_DIR/$IWAD" ] || cp "$IWAD_SRC" "$OUT_DIR/$IWAD"
 
 # Asset URLs are not content-hashed and Frappe serves /assets without a
 # Cache-Control header, so a browser can hold a stale engine indefinitely. The

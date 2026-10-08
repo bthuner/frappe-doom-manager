@@ -1,6 +1,6 @@
 // doom_engine.js
 // Boots the DoomGeneric WASM build (doom.js / doom.wasm / doom.data, produced
-// by GenericDoom_Frappe/build.sh) and connects it to the page:
+// by engine/build.sh) and connects it to the page:
 //   - DoomBridge._blitFrame(ptr, w, h): paints the engine's framebuffer
 //   - keyboard/mouse -> DG_PushKey(pressed, doomKey)
 //   - window.onDoomLevelComplete(...) -> DoomBridge.onLevelComplete({...})
@@ -156,7 +156,7 @@
   }
 
   if (typeof createDoomModule !== "function") {
-    setStatus("doom.js not found: run GenericDoom_Frappe/build.sh first.");
+    setStatus("doom.js not found: run engine/build.sh first.");
     console.error("doom_engine.js: createDoomModule is undefined (doom.js missing?)");
     return;
   }

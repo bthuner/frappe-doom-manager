@@ -2,7 +2,7 @@ name: doomdokos
 
 services:
   backend:
-    build: ../../doom_manager_frappe_app/doom_manager
+    build: ..
     image: doom-dokos:local
     networks:
       - frappe_network

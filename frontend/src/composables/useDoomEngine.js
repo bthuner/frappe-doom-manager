@@ -1,5 +1,5 @@
 // Vue wrapper around the DoomGeneric WASM build (doom.js / doom.wasm / doom.data
-// from GenericDoom_Frappe/build.sh). The engine is a process-wide singleton:
+// from engine/build.sh). The engine is a process-wide singleton:
 // emscripten's main loop cannot be torn down, so the module is created once
 // and simply re-attached to whichever <canvas> is currently mounted.
 import { reactive, readonly } from 'vue'
@@ -100,7 +100,7 @@ window.DoomBridge = Object.assign(window.DoomBridge || {}, {
   onTitle() {},
 })
 
-// The three hooks injected by GenericDoom_Frappe/patch_doom_bridge.py. Episode
+// The three hooks injected by engine/patch_doom_bridge.py. Episode
 // and map are 1-based on all of them, and every count comes with its level
 // total. A run is opened on start and closed on end, whichever way it ends.
 const levelNameFor = (episode, map) => 'E' + episode + 'M' + map
@@ -231,7 +231,7 @@ function loadScript() {
     const s = document.createElement('script')
     s.src = versioned('doom.js')
     s.onload = resolve
-    s.onerror = () => reject(new Error('doom.js not found: run GenericDoom_Frappe/build.sh first'))
+    s.onerror = () => reject(new Error('doom.js not found: run engine/build.sh first'))
     document.head.appendChild(s)
   })
 }
@@ -246,7 +246,7 @@ async function fetchIwad() {
   })
   if (!res.ok) throw new Error('Could not ask the server which IWAD to use')
   const iwad = (await res.json()).message
-  if (!iwad) throw new Error('No IWAD available: run GenericDoom_Frappe/build.sh')
+  if (!iwad) throw new Error('No IWAD available: run engine/build.sh')
 
   // The shipped WAD is a static asset and gets the build id; a stored one comes
   // through a permission-checked endpoint and must not be cache-busted by it.

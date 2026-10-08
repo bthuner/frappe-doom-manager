@@ -1,97 +1,47 @@
-# GenericDoom_Frappe — DoomGeneric → WebAssembly → Frappe
+# engine/ — DoomGeneric → WebAssembly
 
 Compiles [DoomGeneric](https://github.com/ozkl/doomgeneric) to WASM with a
-small SDL-free Emscripten backend and serves it from the `doom_manager` Frappe
-app (sibling repo `../doom_manager_frappe_app/doom_manager`). The game runs at
-`/doom` on the Frappe site; finished levels are stored as `Doom Run` documents.
+small SDL-free Emscripten backend, and drops the result into the app's
+`doom_manager/public/js/`, where the `/doom` page loads it.
 
 ```
-GenericDoom_Frappe/          this repo: build pipeline + docker stack
+engine/
   doomgeneric_emscripten.c   platform backend (main loop, framebuffer hand-off, key queue)
   patch_doom_bridge.py       injects the run-tracking hooks into g_game.c + wi_stuff.c
-  build.sh                   emcc build -> ../doom_manager_frappe_app/.../public/js/doom.{js,wasm,data}
-  docker/compose.yaml        Frappe v15 + MariaDB + Redis with doom_manager installed
-  freedoom1.wad              BSD-licensed IWAD, the only one shipped (see LICENSES.md)
-  LICENSES.md                GPL-2.0 offer of source for the engine, plus the rest
-  doomgeneric/               upstream submodule, pinned (build.sh inits it if missing)
+  build.sh                   emcc build -> ../doom_manager/public/js/doom.{js,wasm} + doom.build.json
+  doomgeneric/               upstream submodule, pinned to dcb7a8d (build.sh inits it if missing)
 ```
 
-## Build the engine
+## Build
 
-Clone with submodules (`doomgeneric/` is pinned to upstream `dcb7a8d`):
+Requires `emcc` (emsdk or a distro emscripten package).
 
 ```bash
-git clone --recurse-submodules ssh://git@forge.heeboo.org:2222/thunerbl/frappe-doom
-# already cloned without it:
-git submodule update --init
+engine/build.sh
 ```
 
-Requires `emcc` (emsdk or a distro emscripten package). The IWAD defaults to
-the bundled `freedoom1.wad`, which is BSD-licensed and the only game data this
-project may redistribute.
-
-If you own Doom, build with it instead — locally:
+The IWAD defaults to `freedoom1.wad`, already shipped in
+`doom_manager/public/js/` — BSD-licensed and the only game data this project
+may redistribute. If you own Doom, drop `doom1.wad` (or `doom.wad`) in
+`engine/` and build with it — locally:
 
 ```bash
-IWAD=doom1.wad ./build.sh    # or doom.wad
+IWAD=doom1.wad engine/build.sh
 ```
 
 id Software's shareware `doom1.wad` is **not** shipped. Its licence covers
 redistributing the complete, unmodified shareware package, not a lone IWAD
-served over HTTP, so a build made with it must stay local. See `LICENSES.md`,
-which also carries the GPL-2.0 offer of source for the compiled engine.
+served over HTTP, so a build made with it must stay local. See
+`../LICENSES.md`, which also carries the GPL-2.0 offer of source for the
+compiled engine.
 
-```bash
-./build.sh
-```
-
-Output lands in `../doom_manager_frappe_app/doom_manager/doom_manager/public/js/`:
-`doom.js` (Emscripten glue, exports `createDoomModule`), `doom.wasm`, and
-`doom.data` (the packaged WAD, mounted at `/doom1.wad`).
+Output: `doom.js` (Emscripten glue, exports `createDoomModule`), `doom.wasm`,
+and `doom.build.json` (a version hash used to bust browser caches, plus the
+default IWAD's name, size and sha256). The IWAD is not baked in: the page
+fetches it at runtime and writes it into MEMFS before `main()`.
 
 The build is the stock `doomgeneric/Makefile` source set (no SDL, no sound) plus
 `doomgeneric_emscripten.c`. Sound is intentionally absent.
-
-## Run Frappe with Doom
-
-```bash
-cd docker
-docker compose build      # layers the app onto frappe/erpnext:v15.121.1
-docker compose up -d      # first start creates site "frontend" and installs doom_manager (~2 min)
-docker compose logs -f create-site
-```
-
-Then open <http://localhost:8099/doom>. Login at `/login` with
-`Administrator` / `admin` to have completed levels saved (guests can play, not
-save). Runs are listed under `/app/doom-run`. Reset everything with
-`docker compose down -v`.
-
-The compose file is frappe_docker's `pwd.yml` with the image swapped for the
-locally built `doom-frappe:local`, MariaDB 10.6, port 8099, and
-`--install-app doom_manager` at site creation.
-
-The app is **copied into the image** at build time -- the only volumes are
-`sites` and `logs`, nothing bind-mounts the source. A running container
-therefore keeps serving the app as it was at the last `docker compose build`.
-After changing app code or rebuilding the engine:
-
-```bash
-docker compose build && docker compose up -d
-# DocType changes (new fields) additionally need:
-docker compose exec backend bench --site frontend migrate
-```
-
-The order matters. Running `migrate` without rebuilding first migrates the
-*old* app baked into the image, reports success, and changes nothing -- the new
-columns simply never appear. `Queued rebuilding of search index for frontend`
-is the normal last line of a successful migrate: the index rebuild is enqueued
-on the long queue, not run inline, so the command is done when it prints that.
-
-## Controls
-
-Enter starts / confirms, Esc opens the menu. Arrows or WASD move (A/D strafe),
-Ctrl or left click fires, Space / E / right click uses, Shift runs, Tab shows the
-map. Cheat codes are typed as usual (`iddqd`, `idkfa`, `idclev12`).
 
 ## How the pieces talk
 

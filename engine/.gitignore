@@ -1,23 +1,9 @@
 # Checkout de build de DoomGeneric : le submodule est épinglé, mais build.sh
 # y copie doomgeneric_emscripten.c et y patche wi_stuff.c à chaque build.
-# Voir "ignore = dirty" dans .gitmodules.
+# Voir "ignore = dirty" dans ../.gitmodules.
 
-# Artefacts de compilation
+# Artefacts de compilation (la sortie va dans ../doom_manager/public/js)
 *.o
 doom.js
 doom.wasm
 doom.data
-
-# IWADs. freedoom1.wad is the exception: BSD-licensed, and the only one here
-# that may be redistributed. A personally owned doom.wad / doom1.wad is fine to
-# build with locally (IWAD=doom1.wad ./build.sh) but must never be committed.
-*.wad
-!freedoom1.wad
-$doom1.wad
-
-# Ancien checkout dupliqué, remplacé par le submodule doomgeneric/
-doomgeneric.pa/
-
-# Divers
-__pycache__/
-*.pyc
